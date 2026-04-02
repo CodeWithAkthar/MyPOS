@@ -1,0 +1,19 @@
+FROM oven/bun:latest
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files first
+COPY package.json bun.lockb* ./
+
+# Install dependencies
+RUN bun install
+
+# Copy source
+COPY . .
+
+# Expose port
+EXPOSE 5500
+
+# Default dev command with watch
+CMD ["sh", "-c", "bun --watch src/index.ts"]

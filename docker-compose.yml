@@ -1,0 +1,12 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: dockerfile.dev
+    volumes:
+      - ./:/app
+      - /app/node_modules # keep container's node_modules isolated
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development

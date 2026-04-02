@@ -1,0 +1,43 @@
+name: Deploy backend to EC2
+
+on:
+  push:
+    branches:
+      - main-disabled
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
+      - name: Building files
+        run: |
+          pnpm install
+          pnpm run build
+
+      - name: Generate SSH key
+        run: |
+          echo "${{ secrets.PRIVATE_KEY }}" > ~/secret.pem
+          chmod 600 ~/secret.pem
+
+      - name: Copy build files and dependencies
+        run: |
+          scp -o StrictHostKeyChecking=accept-new -i "~/secret.pem" -r build ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:pos-backend/
+          # scp -i "~/secret.pem" -r public ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:pos-backend/
+          scp -i "~/secret.pem" package.json ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:pos-backend/
+          scp -i "~/secret.pem" pnpm-lock.yaml ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:pos-backend/
+
+      - name: Install dependencies and restart
+        run: |
+          ssh -i "~/secret.pem" ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} '
+          cd pos-backend
+          pnpm install --prod
+          pm2 reload pos-backend
+          '
